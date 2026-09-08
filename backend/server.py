@@ -1813,11 +1813,15 @@ async def admin_create_blog(
     seo_description: str = Form(""),
     custom_head: str = Form(""),
     image: Optional[UploadFile] = File(None),
+    center_image: Optional[UploadFile] = File(None),
     _=Depends(require_admin),
 ):
     image_url = ""
     if image and image.filename:
         image_url, _ = await _save_public_file(image, BLOG_IMAGE_MIME)
+    center_image_url = ""
+    if center_image and center_image.filename:
+        center_image_url, _ = await _save_public_file(center_image, BLOG_IMAGE_MIME)
     now = datetime.now(timezone.utc)
     doc = {
         "title": title.strip()[:250],
@@ -1826,6 +1830,7 @@ async def admin_create_blog(
         "content": content,
         "status": status if status in ("published", "draft") else "published",
         "image_url": image_url,
+        "center_image_url": center_image_url,
         "categories": _csv_list(categories),
         "tags": _csv_list(tags),
         "focus_keyword": focus_keyword.strip()[:120],
@@ -2003,6 +2008,8 @@ async def admin_update_blog(
     seo_description: str = Form(""),
     custom_head: str = Form(""),
     image: Optional[UploadFile] = File(None),
+    center_image: Optional[UploadFile] = File(None),
+    remove_center_image: str = Form(""),
     _=Depends(require_admin),
 ):
     try:
@@ -2029,6 +2036,10 @@ async def admin_update_blog(
         update["slug"] = _slugify(slug)
     if image and image.filename:
         update["image_url"], _ = await _save_public_file(image, BLOG_IMAGE_MIME)
+    if center_image and center_image.filename:
+        update["center_image_url"], _ = await _save_public_file(center_image, BLOG_IMAGE_MIME)
+    elif remove_center_image.strip().lower() in ("1", "true", "yes"):
+        update["center_image_url"] = ""
     await db.blogs.update_one({"_id": oid}, {"$set": update})
     updated = await db.blogs.find_one({"_id": oid})
     return doc_public(updated)

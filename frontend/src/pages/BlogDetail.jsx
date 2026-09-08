@@ -71,6 +71,16 @@ const BlogDetail = () => {
 
       <article className="vacancy-article mt-8" dangerouslySetInnerHTML={{ __html: enhanceHtml(blog.content) }} data-testid="blog-detail-content" />
 
+      {blog.center_image_url && (
+        <figure className="my-8 flex justify-center" data-testid="blog-center-image">
+          <img
+            src={`${BACKEND}${blog.center_image_url}`}
+            alt={blog.title}
+            className="max-w-full h-auto rounded-2xl border border-white/10"
+          />
+        </figure>
+      )}
+
       <div className="glass mt-12 p-6 text-center !border-[#25D366]/40">
         <h3 className="font-display text-xl font-bold text-white mb-2">
           {hi ? "Latest Haryana Jobs की Updates चाहिए?" : "Want Latest Haryana Job Updates?"}
