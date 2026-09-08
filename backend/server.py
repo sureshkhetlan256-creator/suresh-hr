@@ -694,7 +694,10 @@ async def list_vacancies(
     # those categories. This applies to the default "All" view AND every
     # other category (including haryana / state filters) so admit-card items
     # never leak into a normal job-browsing session.
-    if category not in ("admit_card", "result"):
+    # EXCEPTION: when the user is running a text search (`q`), search across
+    # ALL categories (including admit_card/result) so a matching post surfaces
+    # even without selecting its category filter.
+    if not q and category not in ("admit_card", "result"):
         existing = query.get("category")
         if isinstance(existing, dict):
             existing["$nin"] = list(set(existing.get("$nin", []) + ["admit_card", "result"]))

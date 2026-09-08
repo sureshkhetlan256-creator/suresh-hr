@@ -336,7 +336,7 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 6
+  test_sequence: 7
   run_ui: false
 
 test_plan:
@@ -1033,3 +1033,75 @@ agent_communication:
          - DELETE /api/admin/vacancies/{id} works ✅
       
       Both bug fixes working correctly. No issues found.
+
+  - task: "Search works without filter — admit_card/result posts surface via text search"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "BUG: GET /api/vacancies hid admit_card/result category posts by default, so searching for such a post returned nothing unless the user selected that category filter. FIX: skip the admit_card/result $nin exclusion whenever a text query q is present, so search spans ALL categories. VERIFY: pick a post whose category is 'result' or 'admit_card' (from GET /api/vacancies?category=result). Then search for a distinctive word from its title via GET /api/vacancies?q=<word> WITHOUT any category param -> the post MUST appear in items. Also confirm normal (non-admit/result) search still works, and that WITHOUT q the default 'all' view still excludes admit_card/result posts."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ ALL 4 TESTS PASSED (4/4). BUG FIX VERIFIED SUCCESSFULLY. (1) GET /api/vacancies?category=result&per_page=20 → 200, found 39 result posts, selected post with distinctive word 'nakshanavish'✅. (2) GET /api/vacancies?category=admit_card&per_page=20 → 200, found 15 admit_card posts, selected post with distinctive word 'gujarat'✅. (3) KEY TEST: GET /api/vacancies?q=nakshanavish (NO category param) → 200, target result post (ID: 6a9fc948c33de327196dd6c2) FOUND in search results✅. This confirms bug fix working - search now spans ALL categories including result/admit_card. Additional test: GET /api/vacancies?q=gujarat → 200, found 1 admit_card post in results✅. (4) REGRESSION TEST 1: GET /api/vacancies?q=engineer → 200, returned 66 matching posts (normal search still works)✅. (5) REGRESSION TEST 2: GET /api/vacancies?per_page=50 (NO q, NO category) → 200, returned 50 items with categories ['medical', 'other', 'psu'], NO admit_card or result posts found✅. Default browsing correctly hides these categories. (6) REGRESSION TEST 3: GET /api/vacancies?category=result → 200, all 20 returned posts have category='result'✅. Category filter still works correctly. Bug fix working perfectly - when text query q is present, search spans ALL categories including admit_card/result, but default browsing (no q) still hides them as expected."
+
+  - agent: "main"
+    message: |
+      NEW BACKEND FIX to verify: "Search works without filter". GET /api/vacancies now includes admit_card/result category posts when a text query `q` is supplied (previously they were hidden unless that category filter was selected). Please test: (1) find a result/admit_card post title word, (2) search q=<word> with NO category -> post appears, (3) default no-q 'all' list still excludes admit_card/result. No admin auth needed (public endpoint).
+  - agent: "testing"
+    message: |
+      ✅ SEARCH BUG FIX VERIFIED: ALL TESTS PASSED (4/4)
+      
+      Comprehensive testing completed for the search bug fix:
+      
+      TEST RESULTS:
+      
+      ✅ STEP 1 - Collect result category posts (PASSED):
+         - GET /api/vacancies?category=result&per_page=20 → 200 ✅
+         - Found 39 result posts total, 20 returned ✅
+         - Selected post: "UPSSSC Nakshanavish and Manchitrak 2023 Mains Result" ✅
+         - Extracted distinctive word: "nakshanavish" ✅
+      
+      ✅ STEP 2 - Collect admit_card category posts (PASSED):
+         - GET /api/vacancies?category=admit_card&per_page=20 → 200 ✅
+         - Found 15 admit_card posts total ✅
+         - Selected post: "Gujarat TAT-S Mains Hall Ticket 2026 Soon" ✅
+         - Extracted distinctive word: "gujarat" ✅
+      
+      ✅ STEP 3 - KEY TEST: Search with q parameter (PASSED):
+         - GET /api/vacancies?q=nakshanavish (NO category param) → 200 ✅
+         - Target result post (ID: 6a9fc948c33de327196dd6c2) FOUND in search results ✅
+         - This confirms the bug fix is working - search now spans ALL categories including result ✅
+         - Additional test: GET /api/vacancies?q=gujarat → 200 ✅
+         - Found 1 admit_card post in results ✅
+         - Bug fix verified for BOTH result and admit_card categories ✅
+      
+      ✅ STEP 4 - Regression: Normal search (PASSED):
+         - GET /api/vacancies?q=engineer → 200 ✅
+         - Returned 66 matching posts (20 per page) ✅
+         - Sample results include engineer-related posts from various categories ✅
+         - Normal search functionality preserved ✅
+      
+      ✅ STEP 5 - Regression: Default browsing (PASSED):
+         - GET /api/vacancies?per_page=50 (NO q, NO category) → 200 ✅
+         - Returned 50 items (total: 500) ✅
+         - Categories found: ['medical', 'other', 'psu'] ✅
+         - NO admit_card or result posts in default browsing ✅
+         - Default view correctly hides these categories as expected ✅
+      
+      ✅ STEP 6 - Regression: Category filter (PASSED):
+         - GET /api/vacancies?category=result&per_page=20 → 200 ✅
+         - All 20 returned posts have category='result' ✅
+         - Category filter still works correctly ✅
+      
+      🎯 CONCLUSION:
+      ✅ Bug fix verified successfully
+      ✅ When text query q is present, search spans ALL categories including admit_card/result
+      ✅ Default browsing (no q) still hides admit_card/result posts
+      ✅ Category filters still work correctly
+      ✅ Normal search functionality preserved
+      ✅ No regressions detected
